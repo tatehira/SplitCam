@@ -12,18 +12,31 @@
 <body>
   <div class="drag-region"></div>
 
-  <div class="video-container">
+  <!-- Setup View -->
+  <div id="setup-view" class="setup-container">
+    <div class="setup-content">
+      <h2>SplitCam</h2>
+      <select id="camera-select" class="camera-dropdown">
+        <option value="">Loading cameras...</option>
+      </select>
+      <button id="start-camera-btn" class="primary-btn">Start Camera</button>
+    </div>
+    <!-- Close Button for Setup View -->
+    <button class="close-btn setup-close" title="Close App">
+      <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Camera View -->
+  <div id="camera-view" class="video-container" style="display: none;">
     <video id="camera-stream" autoplay playsinline></video>
     <div class="overlay">
-      <!-- Camera Selection Dropdown -->
-      <div class="controls-top">
-        <select id="camera-select" class="camera-dropdown">
-          <option value="">Loading cameras...</option>
-        </select>
-      </div>
-
       <!-- Close Button -->
-      <button id="close-btn" title="Close Camera">
+      <button class="close-btn camera-close" title="Close Camera">
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -34,14 +47,18 @@
   </div>
 
   <script>
+    const setupView = document.getElementById('setup-view');
+    const cameraView = document.getElementById('camera-view');
     const videoElement = document.getElementById('camera-stream');
-    const closeBtn = document.getElementById('close-btn');
     const cameraSelect = document.getElementById('camera-select');
+    const startCameraBtn = document.getElementById('start-camera-btn');
+    const closeBtns = document.querySelectorAll('.close-btn');
+
     let currentStream = null;
+    let selectedDeviceId = null;
 
     // Access the user's webcam and stream it to the video element
     async function initCamera(deviceId = null) {
-      // Stop existing stream
       if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
       }
@@ -60,7 +77,6 @@
     }
 
     function showError(msg) {
-      // Clear previous errors if any
       const existingErr = document.getElementById('error-msg');
       if (existingErr) existingErr.remove();
 
@@ -78,7 +94,13 @@
       errorDiv.style.textAlign = 'center';
       errorDiv.style.width = '80%';
       errorDiv.innerText = msg;
-      document.body.appendChild(errorDiv);
+
+      // Append to the active view
+      if (setupView.style.display !== 'none') {
+        setupView.appendChild(errorDiv);
+      } else {
+        cameraView.appendChild(errorDiv);
+      }
     }
 
     async function listCameras() {
@@ -91,10 +113,10 @@
         if (videoDevices.length === 0) {
           showError('No camera devices found! Please connect a camera.');
           cameraSelect.innerHTML = '<option value="">No cameras available</option>';
+          startCameraBtn.disabled = true;
           return;
         }
 
-        // Populate dropdown
         videoDevices.forEach((device, index) => {
           const option = document.createElement('option');
           option.value = device.deviceId;
@@ -102,8 +124,7 @@
           cameraSelect.appendChild(option);
         });
 
-        // Init with the first camera found
-        initCamera(videoDevices[0].deviceId);
+        selectedDeviceId = videoDevices[0].deviceId;
 
       } catch (err) {
         showError('Error listing devices: ' + err.message);
@@ -112,17 +133,30 @@
 
     // Handle camera change from dropdown
     cameraSelect.addEventListener('change', (e) => {
+      selectedDeviceId = e.target.value;
+    });
+
+    // Start camera transition
+    startCameraBtn.addEventListener('click', async () => {
+      if (!selectedDeviceId) return;
+
       const errorMsg = document.getElementById('error-msg');
-      if (errorMsg) errorMsg.remove(); // Clear error on change
-      initCamera(e.target.value);
+      if (errorMsg) errorMsg.remove();
+
+      setupView.style.display = 'none';
+      cameraView.style.display = 'block';
+
+      await initCamera(selectedDeviceId);
     });
 
-    // Handle close button
-    closeBtn.addEventListener('click', () => {
-      window.electronAPI.closeApp();
+    // Handle close buttons
+    closeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.electronAPI.closeApp();
+      });
     });
 
-    // Start
+    // Start by listing cameras
     listCameras();
   </script>
 </body>
