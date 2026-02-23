@@ -1,0 +1,145 @@
+:root {
+  --bg-color: transparent;
+  --overlay-hover: rgba(0, 0, 0, 0.4);
+  --btn-bg: rgba(255, 255, 255, 0.2);
+  --btn-hover: rgba(255, 69, 58, 0.9);
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  font-family: 'Inter', sans-serif;
+  color: white;
+}
+
+/* 
+  The invisible region specifically meant for dragging the window.
+  We make the whole body draggable, except the interactive elements.
+*/
+.drag-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-app-region: drag;
+  z-index: 10;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Ensures the video fills the circle without stretching */
+  transform: scaleX(-1);
+  /* Mirror the webcam view */
+}
+
+/* Overlay for buttons */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  /* Hidden by default, visible on hover */
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+  /* Let clicks pass through to drag area except for buttons */
+  transition: opacity 0.3s ease;
+}
+
+/* Show controls when hovering over the window */
+body:hover .overlay {
+  opacity: 1;
+}
+
+/* Allow clicks on controls inside the overlay */
+.overlay * {
+  pointer-events: auto;
+}
+
+/* Close button style */
+#close-btn {
+  -webkit-app-region: no-drag;
+  /* CRITICAL: Allows clicking the button */
+  background: var(--btn-bg);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: auto;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: var(--transition);
+  backdrop-filter: blur(4px);
+}
+
+#close-btn:hover {
+  background: var(--btn-hover);
+  transform: scale(1.1);
+}
+
+#close-btn:active {
+  transform: scale(0.95);
+}
+
+/* Controls Area */
+.controls-top {
+  position: absolute;
+  top: 15px;
+  width: 90%;
+  display: flex;
+  justify-content: center;
+}
+
+.camera-dropdown {
+  -webkit-app-region: no-drag;
+  /* CRITICAL: Allows interaction */
+  background: var(--btn-bg);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  width: 100%;
+  max-width: 250px;
+  backdrop-filter: blur(8px);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  /* Hide default arrow to look cleaner */
+}
+
+.camera-dropdown:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.camera-dropdown option {
+  background: #2a2a2a;
+  color: white;
+}

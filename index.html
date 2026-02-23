@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>PiP Camera</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Use Inter font for a modern look -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="drag-region"></div>
+
+  <div class="video-container">
+    <video id="camera-stream" autoplay playsinline></video>
+    <div class="overlay">
+      <!-- Camera Selection Dropdown -->
+      <div class="controls-top">
+        <select id="camera-select" class="camera-dropdown">
+          <option value="">Loading cameras...</option>
+        </select>
+      </div>
+
+      <!-- Close Button -->
+      <button id="close-btn" title="Close Camera">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const videoElement = document.getElementById('camera-stream');
+    const closeBtn = document.getElementById('close-btn');
+    const cameraSelect = document.getElementById('camera-select');
+    let currentStream = null;
+
+    // Access the user's webcam and stream it to the video element
+    async function initCamera(deviceId = null) {
+      // Stop existing stream
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      try {
+        const constraints = {
+          video: deviceId ? { deviceId: { exact: deviceId } } : true,
+          audio: false
+        };
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElement.srcObject = currentStream;
+      } catch (err) {
+        console.error('Error accessing the camera: ', err);
+        showError('Camera Error: ' + err.message);
+      }
+    }
+
+    function showError(msg) {
+      // Clear previous errors if any
+      const existingErr = document.getElementById('error-msg');
+      if (existingErr) existingErr.remove();
+
+      const errorDiv = document.createElement('div');
+      errorDiv.id = 'error-msg';
+      errorDiv.style.color = 'white';
+      errorDiv.style.position = 'absolute';
+      errorDiv.style.top = '50%';
+      errorDiv.style.left = '50%';
+      errorDiv.style.transform = 'translate(-50%, -50%)';
+      errorDiv.style.zIndex = '100';
+      errorDiv.style.padding = '10px';
+      errorDiv.style.backgroundColor = 'rgba(255,0,0,0.8)';
+      errorDiv.style.borderRadius = '8px';
+      errorDiv.style.textAlign = 'center';
+      errorDiv.style.width = '80%';
+      errorDiv.innerText = msg;
+      document.body.appendChild(errorDiv);
+    }
+
+    async function listCameras() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+        cameraSelect.innerHTML = ''; // clear loading text
+
+        if (videoDevices.length === 0) {
+          showError('No camera devices found! Please connect a camera.');
+          cameraSelect.innerHTML = '<option value="">No cameras available</option>';
+          return;
+        }
+
+        // Populate dropdown
+        videoDevices.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.text = device.label || `Camera ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        // Init with the first camera found
+        initCamera(videoDevices[0].deviceId);
+
+      } catch (err) {
+        showError('Error listing devices: ' + err.message);
+      }
+    }
+
+    // Handle camera change from dropdown
+    cameraSelect.addEventListener('change', (e) => {
+      const errorMsg = document.getElementById('error-msg');
+      if (errorMsg) errorMsg.remove(); // Clear error on change
+      initCamera(e.target.value);
+    });
+
+    // Handle close button
+    closeBtn.addEventListener('click', () => {
+      window.electronAPI.closeApp();
+    });
+
+    // Start
+    listCameras();
+  </script>
+</body>
+
+</html>
